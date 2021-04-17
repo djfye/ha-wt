@@ -306,10 +306,10 @@ func runUpdatesWithNotifications(filter t.Filter) *metrics.Metric {
 		LifecycleHooks: lifecycleHooks,
 		RollingRestart: rollingRestart,
 	}
-	metricResults, err := actions.Update(client, updateParams)
+	result, err := actions.Update(client, updateParams)
 	if err != nil {
 		log.Println(err)
 	}
-	notifier.SendNotification()
-	return metricResults
+	notifier.SendNotification(result)
+	return result.Metric()
 }

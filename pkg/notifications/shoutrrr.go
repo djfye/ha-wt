@@ -4,18 +4,22 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/containrrr/shoutrrr/pkg/types"
+	stdlog "log"
+	"os"
 	"strings"
 	"text/template"
 
-	"github.com/containrrr/shoutrrr"
+	shoutrrr "github.com/containrrr/shoutrrr/pkg/router"
 	t "github.com/containrrr/watchtower/pkg/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 const (
-	shoutrrrDefaultTemplate = "{{range .}}{{.Message}}{{println}}{{end}}"
-	shoutrrrType            = "shoutrrr"
+	shoutrrrDefaultTemplate = `{{with .Report -}}{{len .Scanned}} Scanned, {{len .Updated}} Updated
+{{range .Scanned}} - {{.Name}} ({{.ImageName}}): {{.State}}{{println}}{{end}}
+{{- end}}{{range .Entries}} {{- println .Message -}} {{end}}`
+	shoutrrrType = "shoutrrr"
 )
 
 type router interface {
@@ -59,7 +63,8 @@ func newShoutrrrNotifierFromURL(c *cobra.Command, url string, levels []log.Level
 }
 
 func createSender(urls []string, levels []log.Level, template *template.Template) t.Notifier {
-	r, err := shoutrrr.CreateSender(urls...)
+	debugLogger := stdlog.New(os.Stdout, "[Shoutrrr] ", 0)
+	r, err := shoutrrr.New(debugLogger, urls...)
 	if err != nil {
 		log.Fatalf("Failed to initialize Shoutrrr notifications: %s\n", err.Error())
 	}
@@ -96,17 +101,17 @@ func sendNotifications(n *shoutrrrTypeNotifier) {
 	n.done <- true
 }
 
-func (n *shoutrrrTypeNotifier) buildMessage(entries []*log.Entry) string {
+func (n *shoutrrrTypeNotifier) buildMessage(data Data) string {
 	var body bytes.Buffer
-	if err := n.template.Execute(&body, entries); err != nil {
+	if err := n.template.Execute(&body, data); err != nil {
 		fmt.Printf("Failed to execute Shoutrrrr template: %s\n", err.Error())
 	}
 
 	return body.String()
 }
 
-func (n *shoutrrrTypeNotifier) sendEntries(entries []*log.Entry) {
-	msg := n.buildMessage(entries)
+func (n *shoutrrrTypeNotifier) sendEntries(entries []*log.Entry, report t.Report) {
+	msg := n.buildMessage(Data{entries, report})
 	n.messages <- msg
 }
 
@@ -116,12 +121,12 @@ func (n *shoutrrrTypeNotifier) StartNotification() {
 	}
 }
 
-func (n *shoutrrrTypeNotifier) SendNotification() {
-	if n.entries == nil || len(n.entries) <= 0 {
-		return
-	}
+func (n *shoutrrrTypeNotifier) SendNotification(report t.Report) {
+	//if n.entries == nil || len(n.entries) <= 0 {
+	//	return
+	//}
 
-	n.sendEntries(n.entries)
+	n.sendEntries(n.entries, report)
 	n.entries = nil
 }
 
@@ -143,7 +148,7 @@ func (n *shoutrrrTypeNotifier) Fire(entry *log.Entry) error {
 		n.entries = append(n.entries, entry)
 	} else {
 		// Log output generated outside a cycle is sent immediately.
-		n.sendEntries([]*log.Entry{entry})
+		n.sendEntries([]*log.Entry{entry}, nil)
 	}
 	return nil
 }
@@ -184,4 +189,9 @@ func getShoutrrrTemplate(c *cobra.Command) *template.Template {
 	}
 
 	return tpl
+}
+
+type Data struct {
+	Entries []*log.Entry
+	Report  t.Report
 }
