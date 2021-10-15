@@ -1,0 +1,21 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: '30 */6 * * *' # 30th minute of every 6 hours every day
+  workflow_dispatch: # on button click
+
+jobs:
+  sync:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: tgymnich/fork-sync@v1.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          owner: djfye
+          base: main
+          head: main
+          auto_approve: true
+          personal_token: ${{ secrets.PERSONAL_TOKEN }}
