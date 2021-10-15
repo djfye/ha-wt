@@ -14,7 +14,7 @@ jobs:
       - uses: tgymnich/fork-sync@v1.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          owner: djfye
+          owner: containrrr
           base: main
           head: main
           auto_approve: true
