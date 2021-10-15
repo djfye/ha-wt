@@ -48,7 +48,7 @@ jobs:
           tags: |
             type=ref,event=tag
           flavor: |
-            latest=<true>
+            latest=true
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       # Build and push Docker image with Buildx (don't push on PR)
