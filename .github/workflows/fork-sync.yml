@@ -1,22 +1,27 @@
 name: Sync Fork
-
 on:
   schedule:
-    - cron: '0 5/6 * * *'
+    - cron: "0 5/6 * * *"
   workflow_dispatch:
 
 jobs:
-  sync:
-
+  merge-upstream:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: tgymnich/fork-sync@v1.3
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
-          github_token: ${{ secrets.REPO_PAT }}
-          personal_token: ${{ secrets.PERSONAL_TOKEN }}
-          owner: containrrr
-          base: main
-          head: main
-          pr_title: Merge
-          auto_approve: true
+          ref: main
+          fetch-depth: 0
+          ssh-key: "${{ secrets.SSH_KEY }}"
+      - name: Set GitHub Actions as commit author
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Merge Upstream
+        uses: exions/merge-upstream@v1
+        with:
+          upstream: containrrr/watchtower
+          upstream-branch: main
+          branch: main
