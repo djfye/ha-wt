@@ -5,6 +5,7 @@ import (
 	stdlog "log"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/containrrr/shoutrrr"
 	"github.com/containrrr/shoutrrr/pkg/types"
@@ -57,6 +58,7 @@ type shoutrrrTypeNotifier struct {
 	done           chan bool
 	legacyTemplate bool
 	params         *types.Params
+	hostname       string
 }
 
 // GetScheme returns the scheme part of a Shoutrrr URL
@@ -77,14 +79,15 @@ func (n *shoutrrrTypeNotifier) GetNames() []string {
 	return names
 }
 
-func newShoutrrrNotifier(tplString string, acceptedLogLevels []log.Level, legacy bool, title string, urls ...string) t.Notifier {
+func newShoutrrrNotifier(tplString string, acceptedLogLevels []log.Level, legacy bool, hostname string, delay time.Duration, urls ...string) t.Notifier {
 
 	notifier := createNotifier(urls, acceptedLogLevels, tplString, legacy)
-	notifier.params = &types.Params{"title": title}
+	notifier.hostname = hostname
+	notifier.params = &types.Params{"title": GetTitle(hostname)}
 	log.AddHook(notifier)
 
 	// Do the sending in a separate goroutine so we don't block the main process.
-	go sendNotifications(notifier)
+	go sendNotifications(notifier, delay)
 
 	return notifier
 }
@@ -112,8 +115,9 @@ func createNotifier(urls []string, levels []log.Level, tplString string, legacy 
 	}
 }
 
-func sendNotifications(n *shoutrrrTypeNotifier) {
+func sendNotifications(n *shoutrrrTypeNotifier, delay time.Duration) {
 	for msg := range n.messages {
+		time.Sleep(delay)
 		errs := n.Router.Send(msg, n.params)
 
 		for i, err := range errs {
@@ -145,7 +149,9 @@ func (n *shoutrrrTypeNotifier) buildMessage(data Data) (string, error) {
 }
 
 func (n *shoutrrrTypeNotifier) sendEntries(entries []*log.Entry, report t.Report) {
-	msg, err := n.buildMessage(Data{entries, report})
+	title, _ := n.params.Title()
+	host := n.hostname
+	msg, err := n.buildMessage(Data{entries, report, title, host})
 
 	if msg == "" {
 		// Log in go func in case we entered from Fire to avoid stalling
@@ -238,4 +244,6 @@ func getShoutrrrTemplate(tplString string, legacy bool) (tpl *template.Template,
 type Data struct {
 	Entries []*log.Entry
 	Report  t.Report
+	Title   string
+	Host    string
 }
