@@ -1,5 +1,7 @@
-name: Dependabot auto-approve
-on: pull_request
+name: Dependabot Auto-Approve
+on:
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   pull-requests: write
