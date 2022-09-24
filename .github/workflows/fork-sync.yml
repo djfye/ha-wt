@@ -11,10 +11,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: tgymnich/fork-sync@v1.6
+      - uses: tgymnich/fork-sync@v1.6.3
         with:
-          github_token: ${{ secrets.BOT_TOKEN }}
-          personal_token: ${{ secrets.PERSONAL_TOKEN }}
+          token: ${{ secrets.BOT_TOKEN }}
           owner: containrrr
           base: main
           head: main
