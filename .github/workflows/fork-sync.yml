@@ -21,3 +21,4 @@ jobs:
           auto_approve: true
           retries: 3
           retry_after: 5
+          ignore_fail: true
