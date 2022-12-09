@@ -1,0 +1,26 @@
+name: Sync Fork
+
+on:
+  schedule:
+    - cron: '0 5/6 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: tgymnich/fork-sync@v1.3
+        with:
+          # token: ${{ secrets.BOT_TOKEN }}
+          github_token: ${{ secrets.BOT_TOKEN }}
+          personal_token: ${{ secrets.PERSONAL_TOKEN }}
+          owner: containrrr
+          base: main
+          head: main
+          pr_title: Merge
+          auto_approve: true
+          # auto_merge: true
+          # retries: 3
+          # retry_after: 5
