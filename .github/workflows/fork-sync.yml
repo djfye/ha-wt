@@ -11,16 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: tgymnich/fork-sync@v1.3
+      - uses: tgymnich/fork-sync@v1.8
         with:
           # token: ${{ secrets.BOT_TOKEN }}
-          github_token: ${{ secrets.BOT_TOKEN }}
-          personal_token: ${{ secrets.PERSONAL_TOKEN }}
+          # github_token: ${{ secrets.BOT_TOKEN }}
+          # personal_token: ${{ secrets.PERSONAL_TOKEN }}
           owner: containrrr
+          repo: watchtower
           base: main
           head: main
           pr_title: Merge
-          auto_approve: true
-          # auto_merge: true
-          # retries: 3
-          # retry_after: 5
+          # auto_approve: true
+          auto_merge: true
+          retries: 3
+          retry_after: 5
