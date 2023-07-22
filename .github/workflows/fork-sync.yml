@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: tgymnich/fork-sync@v1.8
         with:
-          # token: ${{ secrets.BOT_TOKEN }}
+          token: ${{ secrets.BOT_TOKEN }}
           # github_token: ${{ secrets.BOT_TOKEN }}
           # personal_token: ${{ secrets.PERSONAL_TOKEN }}
           owner: containrrr
