@@ -134,6 +134,17 @@ Environment Variable: WATCHTOWER_LOG_LEVEL
              Default: info
 ```
 
+## Logging format
+
+Sets what logging format to use for console output.
+
+```text
+            Argument: --log-format, -l
+Environment Variable: WATCHTOWER_LOG_FORMAT
+     Possible values: Auto, LogFmt, Pretty or JSON
+             Default: Auto
+```
+
 ## ANSI colors
 Disable ANSI color escape codes in log output.
 
@@ -178,7 +189,7 @@ Environment Variable: WATCHTOWER_INCLUDE_RESTARTING
 Will also include created and exited containers.
 
 ```text
-            Argument: --include-stopped
+            Argument: --include-stopped, -S
 Environment Variable: WATCHTOWER_INCLUDE_STOPPED
                 Type: Boolean
              Default: false
@@ -205,7 +216,7 @@ Environment Variable: WATCHTOWER_POLL_INTERVAL
 ```
 
 ## Filter by enable label
-Update containers that have a `com.centurylinklabs.watchtower.enable` label set to true.
+Monitor and update containers that have a `com.centurylinklabs.watchtower.enable` label set to true.
 
 ```text
             Argument: --label-enable
@@ -215,7 +226,7 @@ Environment Variable: WATCHTOWER_LABEL_ENABLE
 ```
 
 ## Filter by disable label
-__Do not__ update containers that have `com.centurylinklabs.watchtower.enable` label set to false and 
+__Do not__ Monitor and update containers that have `com.centurylinklabs.watchtower.enable` label set to false and 
 no `--label-enable` argument is passed. Note that only one or the other (targeting by enable label) can be 
 used at the same time to target containers.
 
@@ -237,6 +248,19 @@ Environment Variable: WATCHTOWER_MONITOR_ONLY
 ```
 
 Note that monitor-only can also be specified on a per-container basis with the `com.centurylinklabs.watchtower.monitor-only` label set on those containers.
+
+See [With label taking precedence over arguments](#With-label-taking-precedence-over-arguments) for behavior when both argument and label are set
+
+## With label taking precedence over arguments
+
+By default, arguments will take precedence over labels. This means that if you set `WATCHTOWER_MONITOR_ONLY` to true or use `--monitor-only`, a container with `com.centurylinklabs.watchtower.monitor-only` set to false will not be updated. If you set `WATCHTOWER_LABEL_TAKE_PRECEDENCE` to true or use `--label-take-precedence`, then the container will also be updated. This also apply to the no pull option. if you set `WATCHTOWER_NO_PULL` to true or use `--no-pull`, a container with `com.centurylinklabs.watchtower.no-pull` set to false will not pull the new image. If you set `WATCHTOWER_LABEL_TAKE_PRECEDENCE` to true or use `--label-take-precedence`, then the container will pull image
+
+```text
+            Argument: --label-take-precedence
+Environment Variable: WATCHTOWER_LABEL_TAKE_PRECEDENCE
+                Type: Boolean
+             Default: false
+```
 
 ## Without restarting containers
 Do not restart containers after updating. This option can be useful when the start of the containers
@@ -264,6 +288,8 @@ Environment Variable: WATCHTOWER_NO_PULL
 Note that no-pull can also be specified on a per-container basis with the
 `com.centurylinklabs.watchtower.no-pull` label set on those containers.
 
+See [With label taking precedence over arguments](#With-label-taking-precedence-over-arguments) for behavior when both argument and label are set
+
 ## Without sending a startup message
 Do not send a message after watchtower started. Otherwise there will be an info-level notification.
 
@@ -278,7 +304,7 @@ Environment Variable: WATCHTOWER_NO_STARTUP_MESSAGE
 Run an update attempt against a container name list one time immediately and exit.
 
 ```text
-            Argument: --run-once
+            Argument: --run-once, -R
 Environment Variable: WATCHTOWER_RUN_ONCE
                 Type: Boolean
              Default: false
@@ -391,4 +417,22 @@ requests and may rate limit pull requests (mainly docker.io).
 Environment Variable: WATCHTOWER_WARN_ON_HEAD_FAILURE
      Possible values: always, auto, never
              Default: auto
+```
+
+## Programatic Output (porcelain)
+
+Writes the session results to STDOUT using a stable, machine-readable format (indicated by the argument VERSION).  
+  
+Alias for:
+
+```text
+		--notification-url logger://
+		--notification-log-stdout
+		--notification-report
+		--notification-template porcelain.VERSION.summary-no-log
+
+            Argument: --porcelain, -P
+Environment Variable: WATCHTOWER_PORCELAIN
+     Possible values: v1
+             Default: -
 ```

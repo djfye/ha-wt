@@ -1,12 +1,16 @@
 package flags
 
 import (
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
 )
 
 func TestEnvConfig_Defaults(t *testing.T) {
@@ -173,6 +177,57 @@ func TestProcessFlagAliasesLogLevelFromEnvironment(t *testing.T) {
 	assert.Equal(t, `debug`, logLevel)
 }
 
+func TestLogFormatFlag(t *testing.T) {
+	cmd := new(cobra.Command)
+
+	SetDefaults()
+	RegisterDockerFlags(cmd)
+	RegisterSystemFlags(cmd)
+
+	// Ensure the default value is Auto
+	require.NoError(t, cmd.ParseFlags([]string{}))
+	require.NoError(t, SetupLogging(cmd.Flags()))
+	assert.IsType(t, &logrus.TextFormatter{}, logrus.StandardLogger().Formatter)
+
+	// Test JSON format
+	require.NoError(t, cmd.ParseFlags([]string{`--log-format`, `JSON`}))
+	require.NoError(t, SetupLogging(cmd.Flags()))
+	assert.IsType(t, &logrus.JSONFormatter{}, logrus.StandardLogger().Formatter)
+
+	// Test Pretty format
+	require.NoError(t, cmd.ParseFlags([]string{`--log-format`, `pretty`}))
+	require.NoError(t, SetupLogging(cmd.Flags()))
+	assert.IsType(t, &logrus.TextFormatter{}, logrus.StandardLogger().Formatter)
+	textFormatter, ok := (logrus.StandardLogger().Formatter).(*logrus.TextFormatter)
+	assert.True(t, ok)
+	assert.True(t, textFormatter.ForceColors)
+	assert.False(t, textFormatter.FullTimestamp)
+
+	// Test LogFmt format
+	require.NoError(t, cmd.ParseFlags([]string{`--log-format`, `logfmt`}))
+	require.NoError(t, SetupLogging(cmd.Flags()))
+	textFormatter, ok = (logrus.StandardLogger().Formatter).(*logrus.TextFormatter)
+	assert.True(t, ok)
+	assert.True(t, textFormatter.DisableColors)
+	assert.True(t, textFormatter.FullTimestamp)
+
+	// Test invalid format
+	require.NoError(t, cmd.ParseFlags([]string{`--log-format`, `cowsay`}))
+	require.Error(t, SetupLogging(cmd.Flags()))
+}
+
+func TestLogLevelFlag(t *testing.T) {
+	cmd := new(cobra.Command)
+
+	SetDefaults()
+	RegisterDockerFlags(cmd)
+	RegisterSystemFlags(cmd)
+
+	// Test invalid format
+	require.NoError(t, cmd.ParseFlags([]string{`--log-level`, `gossip`}))
+	require.Error(t, SetupLogging(cmd.Flags()))
+}
+
 func TestProcessFlagAliasesSchedAndInterval(t *testing.T) {
 	logrus.StandardLogger().ExitFunc = func(_ int) { panic(`FATAL`) }
 	cmd := new(cobra.Command)
@@ -221,4 +276,64 @@ func TestProcessFlagAliasesInvalidPorcelaineVersion(t *testing.T) {
 	assert.PanicsWithValue(t, `FATAL`, func() {
 		ProcessFlagAliases(flags)
 	})
+}
+
+func TestFlagsArePrecentInDocumentation(t *testing.T) {
+
+	// Legacy notifcations are ignored, since they are (soft) deprecated
+	ignoredEnvs := map[string]string{
+		"WATCHTOWER_NOTIFICATION_SLACK_ICON_EMOJI": "legacy",
+		"WATCHTOWER_NOTIFICATION_SLACK_ICON_URL":   "legacy",
+	}
+
+	ignoredFlags := map[string]string{
+		"notification-gotify-url":       "legacy",
+		"notification-slack-icon-emoji": "legacy",
+		"notification-slack-icon-url":   "legacy",
+	}
+
+	cmd := new(cobra.Command)
+	SetDefaults()
+	RegisterDockerFlags(cmd)
+	RegisterSystemFlags(cmd)
+	RegisterNotificationFlags(cmd)
+
+	flags := cmd.PersistentFlags()
+
+	docFiles := []string{
+		"../../docs/arguments.md",
+		"../../docs/lifecycle-hooks.md",
+		"../../docs/notifications.md",
+	}
+	allDocs := ""
+	for _, f := range docFiles {
+		bytes, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatalf("Could not load docs file %q: %v", f, err)
+		}
+		allDocs += string(bytes)
+	}
+
+	flags.VisitAll(func(f *pflag.Flag) {
+		if !strings.Contains(allDocs, "--"+f.Name) {
+			if _, found := ignoredFlags[f.Name]; !found {
+				t.Logf("Docs does not mention flag long name %q", f.Name)
+				t.Fail()
+			}
+		}
+		if !strings.Contains(allDocs, "-"+f.Shorthand) {
+			t.Logf("Docs does not mention flag shorthand %q (%q)", f.Shorthand, f.Name)
+			t.Fail()
+		}
+	})
+
+	for _, key := range viper.AllKeys() {
+		envKey := strings.ToUpper(key)
+		if !strings.Contains(allDocs, envKey) {
+			if _, found := ignoredEnvs[envKey]; !found {
+				t.Logf("Docs does not mention environment variable %q", envKey)
+				t.Fail()
+			}
+		}
+	}
 }
