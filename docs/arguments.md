@@ -85,8 +85,8 @@ Environment Variable: WATCHTOWER_CLEANUP
              Default: false
 ```
 
-## Remove attached volumes
-Removes attached volumes after updating. When this flag is specified, watchtower will remove all attached volumes from the container before restarting with a new image. Use this option to force new volumes to be populated as containers are updated.
+## Remove anonymous volumes
+Removes anonymous volumes after updating. When this flag is specified, watchtower will remove all anonymous volumes from the container before restarting with a new image. Named volumes will not be removed!
 
 ```text
             Argument: --remove-volumes
@@ -417,6 +417,17 @@ requests and may rate limit pull requests (mainly docker.io).
 Environment Variable: WATCHTOWER_WARN_ON_HEAD_FAILURE
      Possible values: always, auto, never
              Default: auto
+```
+
+## Health check
+
+Returns a success exit code to enable usage with docker `HEALTHCHECK`. This check is naive and only returns checks whether there is another process running inside the container, as it is the only known form of failure state for watchtowers container.
+
+!!! note "Only for HEALTHCHECK use"
+    Never put this on the main container executable command line as it is only meant to be run from docker HEALTHCHECK.
+
+```text
+            Argument: --health-check
 ```
 
 ## Programatic Output (porcelain)
